@@ -1,5 +1,9 @@
 # kotlin-code-completion
 
+## How to run
+
+In order to run the project, you should use `python 3.10` and install packages specified in `requirements.txt`. I use openai api to translate dataset, and also to compute the ICE Score, so you also have to add `OPENAI_API_KEY = <your key>` to the `.env` file. The translation could be performed by running ```python translate.py```. The finetuning and evaluation is shown in the ```finetune_and_evaluate.ipynb```, which could be run from top to bottom (however, it would be more convenient to skip the hyperparameter validation part, because it takes significant time).
+
 ## Translation
 
 To translate the dataset, I used openai api, and specifically *gpt-4o-mini* model to translate code exercises samples to Kotlin. You can find corresponding code, including the prompt, in the ```translate.py```. You can perform the translation by running ```python translate.py```. It translate first $n$ samples of code exercises dataset. The default value of $n$ is 10000, but you can adjust it in the ```translate.py``` if needed.
@@ -28,7 +32,7 @@ For the evaluation I chose the following metrics:
 
 * **BLEU score**: that is a standard metric to evaluate LLMs. I included it because it is a very popular metric, however, it actually very poorly correlates with actual generation quality, as shown in many research papers, and also can be seen from the results below.
 * **ChrF Score**: ChrF is another evaluation metric that is commonly used in the assessment of language models, particularly for machine translation tasks. Unlike BLEU, which is based on exact word or n-gram matches, ChrF calculates similarity based on character-level n-grams. [It is shown](https://arxiv.org/pdf/2208.03133) to be one of the best choices for generation quality evaluation.
-* **ICE score**: The ICE score is a newer metric designed to evaluate language generation by leveraging modern LLMs. The core idea of ICE score is accurate prompting to an LLM, asking to grade the solution based on the problem and possibly based on the reference solution as well. Although it might be less interpretable, it has a potential to be closer to how a human would evaluate, than other metrics, since LLMs could produce non-trivial reasoning process. TO evaluate this metric, I used the code for the following [repo](https://github.com/terryyz/ice-score).
+* **ICE score**: The ICE score is a newer metric designed to evaluate language generation by leveraging modern LLMs. The core idea of ICE score is accurate prompting to an LLM, asking to grade the solution based on the problem and possibly based on the reference solution as well. Although it might be less interpretable, it has a potential to be closer to how a human would evaluate, than other metrics, since LLMs could produce non-trivial reasoning process. To evaluate this metric, I used the code from the following [repo](https://github.com/terryyz/ice-score).
 
 ### Evaluation results
 
