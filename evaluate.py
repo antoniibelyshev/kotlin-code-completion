@@ -3,6 +3,8 @@ from nltk.translate.bleu_score import corpus_bleu, SmoothingFunction
 from datasets import Dataset
 from tqdm import tqdm
 from typing import Any
+import sacrebleu
+from llm_code_eval import evaluate
 
 
 default_generate_kwargs = {
@@ -56,31 +58,33 @@ def evaluate_code_completion(
     if not hasattr(model.generation_config, "pad_token") or model.generation_config.pad_token is None:
         model.generation_config.pad_token_id = tokenizer.pad_token_id
 
-    completions = []
-    completions_ids = []
-    reference_solutions = []
-    reference_ids = []
+    outputs = []
+    references = []
+    ice_scores = []
     for sample in tqdm(dataset):
-        tokenized_sample = tokenizer(sample["prompt"], return_tensors="pt")
-        input_ids = tokenized_sample["input_ids"].to(model.device)
-        attention_mask = tokenized_sample["attention_mask"].to(model.device)
-        generated_ids = model.generate(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            **{**default_generate_kwargs, **generate_kwargs},
-        )[0][len(input_ids):].cpu()
-        generated_code = tokenizer.decode(generated_ids, skip_special_tokens=True)
+        problem = sample["prompt"]
+        output = complete(problem, model, tokenizer, **generate_kwargs)["code"][len(problem):]
 
-        completions_ids.append(generated_ids)
-        completions.append(generated_code)
+        outputs.append(output)
 
-        reference_solution = "\n".join(sample["canonical_solution"][1:])
-        reference_solutions.append(reference_solution)
-        reference_ids.append(tokenizer(reference_solution[1:], return_tensors="pt").input_ids)
+        reference = "\n".join(sample["canonical_solution"][1:])
+        references.append(reference)
+
+        ice_scores.append(evaluate(
+            problem=problem,
+            output=output,
+            reference=reference,
+            task="code-gen", aspect="usefulness", model="gpt-4o-mini"
+        ))
 
     smoothing_function = SmoothingFunction().method1
+
+    bleu_score = corpus_bleu(references, outputs, smoothing_function=smoothing_function)
+    chrf_score = sacrebleu.corpus_chrf(outputs, [references]).score
+
     results = {
-        "symbol-bleu-score": corpus_bleu(reference_solutions, completions, smoothing_function=smoothing_function),
-        "token-bleu-score": corpus_bleu(reference_ids, completions_ids, smoothing_function=smoothing_function),
+        "bleu-score": bleu_score,
+        "chrf-score": chrf_score,
+        "ice-scores": ice_scores,
     }
     return results

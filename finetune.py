@@ -18,7 +18,7 @@ from data_utils import get_preprocess_function
 
 
 DEFAULT_TRAINING_ARGS = {
-    "output_dir": "./fine_tuned_granite",
+    "output_dir": "./checkpoints",
     "per_device_train_batch_size": 8,
     "gradient_accumulation_steps": 32,
     "learning_rate": 5e-5,
@@ -111,7 +111,7 @@ def train_model(
     return model, val_loss
 
 
-def cross_validate_hyperparameters(
+def validate_hyperparameters(
     model_name: str,
     data: DatasetDict,
     hyperparams: dict[str, list[Any]],
